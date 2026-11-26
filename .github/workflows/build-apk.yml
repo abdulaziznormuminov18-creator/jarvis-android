@@ -12,9 +12,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check files
-        run: ls -la
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -38,8 +35,10 @@ jobs:
       - name: Build APK
         run: |
           DIR=$(dirname "$(find source -name settings.gradle* | head -n 1)")
-          echo "Project dir: $DIR"
           cd "$DIR"
+          F=app/build.gradle.kts
+          perl -0pi -e 's/kotlinOptions\s*\{[^}]*\}//s' "$F"
+          printf '\nkotlin {\n    compilerOptions {\n        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)\n    }\n}\n' >> "$F"
           gradle --no-daemon :app:assembleDebug --console=plain > build.log 2>&1 || { grep -n -A20 "What went wrong" build.log; tail -n 30 build.log; exit 1; }
 
       - name: Upload APK
