@@ -38,8 +38,11 @@ jobs:
           cd "$DIR"
           F=app/build.gradle.kts
           perl -0pi -e 's/kotlinOptions\s*\{[^}]*\}//s' "$F"
-          printf '\nkotlin {\n    compilerOptions {\n        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)\n    }\n}\n' >> "$F"
-          gradle --no-daemon :app:assembleDebug --console=plain > build.log 2>&1 || { grep -n -A20 "What went wrong" build.log; tail -n 30 build.log; exit 1; }
+          if ! grep -q "compilerOptions" "$F"; then
+            printf '\nkotlin {\n    compilerOptions {\n        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)\n    }\n}\n' >> "$F"
+          fi
+          find . -name "*.gradle.kts" -o -name "*.toml" | xargs perl -pi -e 's/(activity[-_]?compose[^\n]*?)1\.14\.0/${1}1.10.1/i'
+          gradle --no-daemon :app:assembleDebug --console=plain > build.log 2>&1 || { grep -n -B2 -A25 "What went wrong" build.log; tail -n 30 build.log; exit 1; }
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
